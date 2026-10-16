@@ -1,60 +1,117 @@
+
 cmake_minimum_required(VERSION 3.16)
+
 project(Dictionary-project VERSION 0.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# ---- version -------------------------------------------------
-set(PROJECT_VERSION_MAJOR 0)
-set(PROJECT_VERSION_MINOR 0)
-set(PROJECT_VERSION_PATCH 0)
-set(PROJECT_VERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
+# -------------------------------------------------
+# Dependencies
+# -------------------------------------------------
 
-add_compile_definitions(PROJECT_VERSION="${PROJECT_VERSION}")
-# -------------------------------------------------------------
+include(FetchContent)
 
-# Dictionary Program
-add_executable(dictionary-project
-    src/main.cpp
-
-    # ImGui core
-    imgui/imgui.cpp
-    imgui/imgui_draw.cpp
-    imgui/imgui_widgets.cpp
-    imgui/imgui_tables.cpp
-
-    # ImGui backends
-    imgui/backends/imgui_impl_glfw.cpp
-    imgui/backends/imgui_impl_opengl3.cpp
-
-    imgui/misc/cpp/imgui_stdlib.cpp
-
+# JSON
+FetchContent_Declare(
+    json
+    URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
-
-# Include directories for our code + ImGui
-target_include_directories(Dictionary-project PRIVATE
-    include
-    imgui
-    imgui/backends
-    imgui/misc/cpp
-)
-
-# Find system libs
-find_package(PkgConfig REQUIRED)
 
 # GLFW
-pkg_search_module(GLFW REQUIRED glfw3)
-target_link_libraries(dictionary-project ${GLFW_LIBRARIES})
-target_include_directories(dictionary-project PRIVATE ${GLFW_INCLUDE_DIRS})
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
-# OpenGL
+FetchContent_Declare(
+    glfw
+    GIT_REPOSITORY https://github.com/glfw/glfw.git
+    GIT_TAG 3.4
+    GIT_SHALLOW TRUE
+)
+
+# Dear ImGui
+FetchContent_Declare(
+    imgui
+    GIT_REPOSITORY https://github.com/ocornut/imgui.git
+    GIT_TAG v1.91.9b
+    GIT_SHALLOW TRUE
+)
+
+FetchContent_MakeAvailable(json glfw imgui)
+
 find_package(OpenGL REQUIRED)
-target_link_libraries(dictionary-project OpenGL::GL)
 
-# Linux defaults (dl, pthread)
-target_link_libraries(dictionary-project dl pthread)
+# -------------------------------------------------
+# Dictionary Engine
+# -------------------------------------------------
 
-# Output to bin/
+add_library(dictionary_engine
+    src/DictionaryEngine.cpp
+)
+
+target_include_directories(dictionary_engine PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+target_link_libraries(dictionary_engine PUBLIC
+    nlohmann_json::nlohmann_json
+)
+
+# -------------------------------------------------
+# Dear ImGui Library
+# -------------------------------------------------
+
+add_library(imgui_runtime STATIC
+
+    ${imgui_SOURCE_DIR}/imgui.cpp
+    ${imgui_SOURCE_DIR}/imgui_draw.cpp
+    ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+    ${imgui_SOURCE_DIR}/imgui_tables.cpp
+
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
+
+    ${imgui_SOURCE_DIR}/misc/cpp/imgui_stdlib.cpp
+)
+
+target_include_directories(imgui_runtime PUBLIC
+    ${imgui_SOURCE_DIR}
+    ${imgui_SOURCE_DIR}/backends
+    ${imgui_SOURCE_DIR}/misc/cpp
+)
+
+target_link_libraries(imgui_runtime PUBLIC
+    glfw
+    OpenGL::GL
+)
+
+# -------------------------------------------------
+# Dictionary Application
+# -------------------------------------------------
+
+add_executable(dictionary-project
+    src/main.cpp
+)
+
+target_include_directories(dictionary-project PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
+target_link_libraries(dictionary-project PRIVATE
+    dictionary_engine
+    imgui_runtime
+)
+
+target_compile_definitions(dictionary-project PRIVATE
+    PROJECT_VERSION="${PROJECT_VERSION}"
+)
+
+# -------------------------------------------------
+# Output
+# -------------------------------------------------
+
 set_target_properties(dictionary-project PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin
 )
