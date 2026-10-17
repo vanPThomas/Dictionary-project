@@ -13,9 +13,11 @@
 #include <windows.h>
 #endif
 
-namespace lex {
+namespace lex
+{
 namespace {
-std::string join(const std::vector<std::string>& items) {
+std::string join(const std::vector<std::string>& items)
+{
     std::ostringstream out;
     for (const auto& item : items) out << "- " << item << '\n';
     return out.str();
@@ -23,14 +25,19 @@ std::string join(const std::vector<std::string>& items) {
 
 // Lightweight case folding for the language's current Latin alphabet, NOT a
 // general-purpose Unicode normalizer. Accents remain phonemically distinct.
-std::string fold(std::string s) {
+std::string fold(std::string s)
+{
     std::string result;
-    for (std::size_t i = 0; i < s.size();) {
+    for (std::size_t i = 0; i < s.size();)
+    {
         const unsigned char c = static_cast<unsigned char>(s[i]);
-        if (c < 128) {
+        if (c < 128)
+        {
             result += static_cast<char>(std::tolower(c));
             ++i;
-        } else if (i + 1 < s.size()) {
+        }
+        else if (i + 1 < s.size())
+        {
             const std::string pair = s.substr(i, 2);
             if (pair == "\xC3\x90") result += "\xC3\xB0";      // Ð → ð
             else if (pair == "\xC3\x87") result += "\xC3\xA7"; // Ç → ç
@@ -38,31 +45,41 @@ std::string fold(std::string s) {
             else if (pair == "\xC5\x8C") result += "\xC5\x8D"; // Ō → ō
             else result += pair;
             i += 2;
-        } else {
+        }
+        else
+        {
             result += s[i++];
         }
     }
     return result;
 }
 
-std::string stringValue(const Json& object, const char* key) {
+std::string stringValue(const Json& object, const char* key)
+{
     if (!object.is_object() || !object.contains(key) || !object[key].is_string()) return "";
     return object[key].get<std::string>();
 }
 
-bool matches(const Json& item, const std::string& q) {
+bool matches(const Json& item, const std::string& q)
+{
     auto has = [&](const std::string& text) { return fold(text).find(q) != std::string::npos; };
     if (has(stringValue(item, "lemma"))) return true;
-    if (item.contains("alternate_spellings") && item["alternate_spellings"].is_array()) {
+    if (item.contains("alternate_spellings") && item["alternate_spellings"].is_array())
+    {
         for (const auto& v : item["alternate_spellings"])
             if (v.is_string() && has(v.get<std::string>())) return true;
     }
-    if (item.contains("senses") && item["senses"].is_array()) {
-        for (const auto& sense : item["senses"]) {
+    if (item.contains("senses") && item["senses"].is_array())
+    {
+        for (const auto& sense : item["senses"])
+        {
             if (has(stringValue(sense, "definition"))) return true;
-            if (sense.contains("translations") && sense["translations"].is_object()) {
-                for (auto it = sense["translations"].begin(); it != sense["translations"].end(); ++it) {
-                    if (it.value().is_array()) {
+            if (sense.contains("translations") && sense["translations"].is_object())
+            {
+                for (auto it = sense["translations"].begin(); it != sense["translations"].end(); ++it)
+                {
+                    if (it.value().is_array())
+                    {
                         for (const auto& translation : it.value())
                             if (translation.is_string() && has(translation.get<std::string>())) return true;
                     }
@@ -76,7 +93,8 @@ bool matches(const Json& item, const std::string& q) {
 }
 } // namespace
 
-std::vector<std::string> DictionaryEngine::validateDocument(const Json& doc) {
+std::vector<std::string> DictionaryEngine::validateDocument(const Json& doc)
+{
     std::vector<std::string> errors;
     if (!doc.is_object()) return {"Root must be a JSON object."};
     if (!doc.contains("schema_version") || !doc["schema_version"].is_number_integer() ||
@@ -91,7 +109,8 @@ std::vector<std::string> DictionaryEngine::validateDocument(const Json& doc) {
     std::unordered_map<std::uint64_t, std::set<std::uint64_t>> senseIds;
     std::uint64_t maximum = 0;
     for (const auto& entry : doc["entries"]) {
-        if (!entry.is_object() || !entry.contains("id") || !entry["id"].is_number_unsigned()) {
+        if (!entry.is_object() || !entry.contains("id") || !entry["id"].is_number_unsigned())
+        {
             errors.emplace_back("Every entry must be an object with an unsigned integer id.");
             continue;
         }
@@ -130,7 +149,8 @@ std::vector<std::string> DictionaryEngine::validateDocument(const Json& doc) {
             continue;
         }
         int primaryCount = 0;
-        for (const auto& s : entry["senses"]) {
+        for (const auto& s : entry["senses"])
+        {
             if (!s.is_object() || !s.contains("id") || !s["id"].is_number_unsigned()) {
                 errors.emplace_back("Entry " + std::to_string(id) + " has a sense without integer id.");
                 continue;
@@ -162,15 +182,18 @@ std::vector<std::string> DictionaryEngine::validateDocument(const Json& doc) {
         errors.emplace_back("next_entry_id must be greater than every existing id.");
 
     // Check references only after all IDs/senses have been collected.
-    for (const auto& entry : doc["entries"]) {
+    for (const auto& entry : doc["entries"])
+    {
         if (!entry.is_object() || !entry.contains("id") || !entry["id"].is_number_unsigned()) continue;
         const auto id = entry["id"].get<std::uint64_t>();
-        auto checkRef = [&](const Json& ref, const std::string& where) {
+        auto checkRef = [&](const Json& ref, const std::string& where)
+        {
             if (ref.is_null()) return; // unresolved compound components are allowed
             if (!ref.is_number_unsigned() || ids.find(ref.get<std::uint64_t>()) == ids.end())
                 errors.emplace_back("Entry " + std::to_string(id) + " has broken " + where + " reference.");
         };
-        if (entry.contains("morphology") && entry["morphology"].is_object()) {
+        if (entry.contains("morphology") && entry["morphology"].is_object())
+        {
             const auto& morph = entry["morphology"];
             if (morph.contains("components") && morph["components"].is_array())
                 for (const auto& comp : morph["components"]) {
@@ -180,12 +203,15 @@ std::vector<std::string> DictionaryEngine::validateDocument(const Json& doc) {
                     else checkRef(comp["entry_id"], "component");
                 }
         }
-        if (entry.contains("relations") && entry["relations"].is_array()) {
-            for (const auto& rel : entry["relations"]) {
+        if (entry.contains("relations") && entry["relations"].is_array())
+        {
+            for (const auto& rel : entry["relations"])
+            {
                 if (!rel.is_object() || !rel.contains("target_id")) continue;
                 checkRef(rel["target_id"], "relation");
                 if (rel["target_id"].is_number_unsigned() && rel.contains("target_sense_id") &&
-                    rel["target_sense_id"].is_number_unsigned()) {
+                    rel["target_sense_id"].is_number_unsigned())
+                    {
                     const auto target = rel["target_id"].get<std::uint64_t>();
                     const auto sid = rel["target_sense_id"].get<std::uint64_t>();
                     if (senseIds[target].count(sid) == 0)
@@ -193,8 +219,10 @@ std::vector<std::string> DictionaryEngine::validateDocument(const Json& doc) {
                 }
             }
         }
-        if (entry.contains("examples") && entry["examples"].is_array()) {
-            for (const auto& example : entry["examples"]) {
+        if (entry.contains("examples") && entry["examples"].is_array())
+        {
+            for (const auto& example : entry["examples"])
+            {
                 if (example.is_object() && example.contains("sense_id") &&
                     example["sense_id"].is_number_unsigned() &&
                     senseIds[id].count(example["sense_id"].get<std::uint64_t>()) == 0)
@@ -205,8 +233,10 @@ std::vector<std::string> DictionaryEngine::validateDocument(const Json& doc) {
     return errors;
 }
 
-bool DictionaryEngine::load(const std::filesystem::path& path, std::string& error) {
-    try {
+bool DictionaryEngine::load(const std::filesystem::path& path, std::string& error)
+{
+    try
+    {
         std::ifstream file(path, std::ios::binary);
         if (!file) { error = "Cannot open " + path.string(); return false; }
         Json candidate = Json::parse(file);
@@ -220,18 +250,21 @@ bool DictionaryEngine::load(const std::filesystem::path& path, std::string& erro
     } catch (const std::exception& ex) { error = ex.what(); return false; }
 }
 
-std::vector<std::string> DictionaryEngine::validate() const {
+std::vector<std::string> DictionaryEngine::validate() const
+{
     return validateDocument(document_);
 }
 
-const Json* DictionaryEngine::find(std::uint64_t id) const {
+const Json* DictionaryEngine::find(std::uint64_t id) const
+{
     if (!document_.is_object() || !document_.contains("entries")) return nullptr;
     for (const auto& entry : document_["entries"])
         if (entry["id"].get<std::uint64_t>() == id) return &entry;
     return nullptr;
 }
 
-std::vector<std::uint64_t> DictionaryEngine::search(const std::string& text) const {
+std::vector<std::uint64_t> DictionaryEngine::search(const std::string& text) const
+{
     std::vector<std::uint64_t> ids;
     const std::string q = fold(text);
     if (!document_.is_object()) return ids;
@@ -243,7 +276,8 @@ std::vector<std::uint64_t> DictionaryEngine::search(const std::string& text) con
     return ids;
 }
 
-Json DictionaryEngine::newEntry(std::uint64_t id, const std::string& type) {
+Json DictionaryEngine::newEntry(std::uint64_t id, const std::string& type)
+{
     Json entry = Json::object();
     entry["id"] = id;
     entry["lemma"] = "new_word";
@@ -278,7 +312,8 @@ Json DictionaryEngine::newEntry(std::uint64_t id, const std::string& type) {
     return entry;
 }
 
-bool DictionaryEngine::add(const std::string& type, std::uint64_t& newId, std::string& error) {
+bool DictionaryEngine::add(const std::string& type, std::uint64_t& newId, std::string& error)
+{
     if (type != "word" && type != "affix") { error = "Unknown entry type"; return false; }
     try {
         Json candidate = document_;
@@ -296,16 +331,20 @@ bool DictionaryEngine::add(const std::string& type, std::uint64_t& newId, std::s
     } catch (const std::exception& ex) { error = ex.what(); return false; }
 }
 
-bool DictionaryEngine::validateReplacement(std::uint64_t id, const Json& replacement, std::string& error) const {
+bool DictionaryEngine::validateReplacement(std::uint64_t id, const Json& replacement, std::string& error) const
+{
     if (!replacement.is_object() || !replacement.contains("id") ||
-        !replacement["id"].is_number_unsigned() || replacement["id"].get<std::uint64_t>() != id) {
+        !replacement["id"].is_number_unsigned() || replacement["id"].get<std::uint64_t>() != id)
+        {
         error = "Entry ID is immutable. Edit the other fields instead.";
         return false;
     }
     Json candidate = document_;
     bool found = false;
-    for (auto& entry : candidate["entries"]) {
-        if (entry["id"].get<std::uint64_t>() == id) {
+    for (auto& entry : candidate["entries"])
+    {
+        if (entry["id"].get<std::uint64_t>() == id)
+        {
             entry = replacement;
             found = true;
             break;
@@ -318,16 +357,20 @@ bool DictionaryEngine::validateReplacement(std::uint64_t id, const Json& replace
     return true;
 }
 
-bool DictionaryEngine::replace(std::uint64_t id, const Json& replacement, std::string& error) {
+bool DictionaryEngine::replace(std::uint64_t id, const Json& replacement, std::string& error)
+{
     if (!replacement.is_object() || !replacement.contains("id") ||
-        !replacement["id"].is_number_unsigned() || replacement["id"].get<std::uint64_t>() != id) {
+        !replacement["id"].is_number_unsigned() || replacement["id"].get<std::uint64_t>() != id)
+    {
         error = "Entry ID is immutable. Edit the other fields instead.";
         return false;
     }
     if (!validateReplacement(id, replacement, error)) return false;
     Json candidate = document_;
-    for (auto& entry : candidate["entries"]) {
-        if (entry["id"].get<std::uint64_t>() == id) {
+    for (auto& entry : candidate["entries"])
+    {
+        if (entry["id"].get<std::uint64_t>() == id)
+        {
             entry = replacement;
             break;
         }
@@ -338,12 +381,15 @@ bool DictionaryEngine::replace(std::uint64_t id, const Json& replacement, std::s
     return true;
 }
 
-bool DictionaryEngine::remove(std::uint64_t id, std::string& error) {
+bool DictionaryEngine::remove(std::uint64_t id, std::string& error)
+{
     Json candidate = document_;
     bool found = false;
     auto& entries = candidate["entries"];
-    for (auto it = entries.begin(); it != entries.end(); ++it) {
-        if ((*it)["id"].get<std::uint64_t>() == id) {
+    for (auto it = entries.begin(); it != entries.end(); ++it)
+    {
+        if ((*it)["id"].get<std::uint64_t>() == id)
+        {
             entries.erase(it);
             found = true;
             break;
@@ -358,13 +404,15 @@ bool DictionaryEngine::remove(std::uint64_t id, std::string& error) {
     return true;
 }
 
-bool DictionaryEngine::save(std::string& error) {
+bool DictionaryEngine::save(std::string& error)
+{
     auto issues = validate();
     if (!issues.empty()) { error = join(issues); return false; }
     if (path_.empty()) { error = "No dictionary path set"; return false; }
     auto temp = path_; temp += ".tmp";
     auto backup = path_; backup += ".bak";
-    try {
+    try
+    {
         {
             std::ofstream out(temp, std::ios::binary | std::ios::trunc);
             if (!out) { error = "Cannot write temporary file"; return false; }
@@ -375,8 +423,8 @@ bool DictionaryEngine::save(std::string& error) {
         if (std::filesystem::exists(path_))
             std::filesystem::copy_file(path_, backup, std::filesystem::copy_options::overwrite_existing);
 #ifdef _WIN32
-        if (!MoveFileExW(temp.wstring().c_str(), path_.wstring().c_str(),
-                         MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
+        if (!MoveFileExW(temp.wstring().c_str(), path_.wstring().c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH))
+        {
             error = "Failed to replace dictionary file (Windows error " + std::to_string(GetLastError()) + ")";
             return false;
         }

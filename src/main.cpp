@@ -16,52 +16,64 @@
 #include <string>
 #include <utility>
 
-namespace {
+namespace
+{
 using lex::Json;
 
-std::string fieldText(const Json& j, const char* field) {
+std::string fieldText(const Json& j, const char* field)
+{
     return j.is_object() && j.contains(field) && j[field].is_string()
         ? j[field].get<std::string>() : "";
 }
 
-void editText(const char* label, Json& parent, const char* key) {
+void editText(const char* label, Json& parent, const char* key)
+{
     if (!parent.contains(key) || !parent[key].is_string()) parent[key] = "";
     ImGui::InputText(label, &parent[key].get_ref<std::string&>());
 }
 
-void editMultiline(const char* label, Json& parent, const char* key, float height = 75.0f) {
+void editMultiline(const char* label, Json& parent, const char* key, float height = 75.0f)
+{
     if (!parent.contains(key) || !parent[key].is_string()) parent[key] = "";
     ImGui::InputTextMultiline(label, &parent[key].get_ref<std::string&>(), ImVec2(-1, height));
 }
 
 // Null in JSON has a different meaning from a blank string.
-void editOptionalText(const char* label, Json& parent, const char* key) {
+void editOptionalText(const char* label, Json& parent, const char* key)
+{
     std::string text = fieldText(parent, key);
     if (ImGui::InputText(label, &text))
         parent[key] = text.empty() ? Json(nullptr) : Json(text);
 }
 
-std::string partOfSpeech(const Json& entry) {
+std::string partOfSpeech(const Json& entry)
+{
     return entry.contains("linguistics")
         ? fieldText(entry["linguistics"], "part_of_speech") : "";
 }
 
-std::string primaryDefinition(const Json& entry) {
+std::string primaryDefinition(const Json& entry)
+{
     if (!entry.contains("senses") || entry["senses"].empty()) return "";
     for (const auto& s : entry["senses"])
         if (s.value("is_primary", false)) return fieldText(s, "definition");
     return fieldText(entry["senses"][0], "definition");
 }
 
-class DictionaryUI {
+class DictionaryUI
+{
 public:
-    explicit DictionaryUI(std::filesystem::path path) {
+    explicit DictionaryUI(std::filesystem::path path)
+    {
         std::string error;
-        if (!engine_.load(path, error)) {
+        if (!engine_.load(path, error))
+        {
             message_ = "Cannot open dictionary: " + error;
             // A missing/invalid dictionary is fatal for this simple prototype.
             loaded_ = false;
-        } else {
+        }
+        else
+        {
             loaded_ = true;
             message_ = "Loaded " + std::to_string(engine_.size()) + " entries.";
             const auto ids = engine_.search("");
@@ -72,7 +84,8 @@ public:
     bool loaded() const { return loaded_; }
     const std::string& message() const { return message_; }
 
-    void draw() {
+    void draw()
+    {
         ImGuiViewport* viewport = ImGui::GetMainViewport();
         ImGui::SetNextWindowPos(viewport->WorkPos);
         ImGui::SetNextWindowSize(viewport->WorkSize);
@@ -80,19 +93,23 @@ public:
                      ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
                      ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_MenuBar);
 
-        if (ImGui::BeginMenuBar()) {
-            if (ImGui::BeginMenu("File")) {
+        if (ImGui::BeginMenuBar())
+        {
+            if (ImGui::BeginMenu("File"))
+            {
                 if (ImGui::MenuItem("Save dictionary")) saveAll();
                 ImGui::EndMenu();
             }
-            if (ImGui::BeginMenu("Entry")) {
+            if (ImGui::BeginMenu("Entry"))
+            {
                 if (ImGui::MenuItem("New word")) request([this] { newEntry("word"); });
                 if (ImGui::MenuItem("New affix")) request([this] { newEntry("affix"); });
                 if (selected_ && ImGui::MenuItem("Delete selected"))
                     ImGui::OpenPopup("Delete entry?");
                 ImGui::EndMenu();
             }
-            if (ImGui::BeginMenu("Tools")) {
+            if (ImGui::BeginMenu("Tools"))
+            {
                 if (ImGui::MenuItem("Validate saved entries")) validate();
                 ImGui::EndMenu();
             }
@@ -110,7 +127,8 @@ public:
         ImGui::TextDisabled("%zu entries%s", engine_.size(), engine_.dirty() ? "  * not saved to disk" : "");
 
         if (ImGui::BeginTable("main_layout", 2,
-                ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersInnerV, ImVec2(-1, -55))) {
+                ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersInnerV, ImVec2(-1, -55)))
+        {
             ImGui::TableSetupColumn("Search", ImGuiTableColumnFlags_WidthFixed, 330.0f);
             ImGui::TableSetupColumn("Editor", ImGuiTableColumnFlags_WidthStretch);
             ImGui::TableNextRow();
@@ -142,12 +160,14 @@ private:
     std::function<void()> pendingAction_;
     std::optional<std::uint64_t> navigation_;
 
-    bool draftChanged() const {
+    bool draftChanged() const
+    {
         const auto* stored = engine_.find(selected_);
         return stored && draft_ != *stored;
     }
 
-    void select(std::uint64_t id) {
+    void select(std::uint64_t id)
+    {
         const auto* entry = engine_.find(id);
         if (!entry) { message_ = "Unknown entry #" + std::to_string(id); return; }
         selected_ = id;
@@ -156,16 +176,21 @@ private:
         rawEdited_ = false;
     }
 
-    void request(std::function<void()> action) {
-        if (draftChanged() || rawEdited_) {
+    void request(std::function<void()> action)
+    {
+        if (draftChanged() || rawEdited_)
+        {
             pendingAction_ = std::move(action);
             ImGui::OpenPopup("Unapplied edits");
-        } else {
+        }
+        else
+        {
             action();
         }
     }
 
-    void newEntry(const std::string& type) {
+    void newEntry(const std::string& type)
+    {
         std::uint64_t id = 0;
         std::string error;
         if (!engine_.add(type, id, error)) { message_ = error; return; }
@@ -174,7 +199,8 @@ private:
     }
 
     bool importRawJson() {
-        try {
+        try
+        {
             Json parsed = Json::parse(rawJson_);
             if (!parsed.is_object()) { message_ = "Entry JSON must be an object."; return false; }
             std::string error;
@@ -185,18 +211,22 @@ private:
             draft_ = std::move(parsed);
             rawEdited_ = false;
             return true;
-        } catch (const std::exception& ex) {
+        }
+        catch (const std::exception& ex)
+        {
             message_ = std::string("Invalid entry JSON: ") + ex.what();
             return false;
         }
     }
 
-    bool applyDraft() {
+    bool applyDraft()
+    {
         if (!selected_) return true;
         if (rawEdited_ && !importRawJson()) return false;
         if (!draftChanged()) return true;
         std::string error;
-        if (!engine_.replace(selected_, draft_, error)) {
+        if (!engine_.replace(selected_, draft_, error))
+        {
             message_ = "Cannot apply entry:\n" + error;
             return false;
         }
@@ -212,7 +242,8 @@ private:
         else message_ = "Save failed:\n" + error;
     }
 
-    void validate() {
+    void validate()
+    {
         auto issues = engine_.validate();
         message_ = issues.empty() ? "All committed entries passed validation." : "Validation failed:\n";
         for (const auto& issue : issues) message_ += "- " + issue + "\n";
@@ -220,14 +251,16 @@ private:
             message_ += "(Current editor draft is not validated until you press Apply entry.)";
     }
 
-    void renderBrowser() {
+    void renderBrowser()
+    {
         ImGui::TextUnformatted("Find a word");
         ImGui::SetNextItemWidth(-1);
         ImGui::InputTextWithHint("##search", "Lemma, definition, translation...", &query_);
         const auto results = engine_.search(query_);
         ImGui::TextDisabled("%zu results", results.size());
         ImGui::Separator();
-        for (const auto id : results) {
+        for (const auto id : results)
+        {
             const Json* e = engine_.find(id);
             if (!e) continue;
             const std::string lemma = fieldText(*e, "lemma");
@@ -243,25 +276,30 @@ private:
         }
     }
 
-    void renderSenses() {
+    void renderSenses()
+    {
         if (!ImGui::CollapsingHeader("Meanings / senses", ImGuiTreeNodeFlags_DefaultOpen)) return;
         auto& senses = draft_["senses"];
-        for (std::size_t i = 0; i < senses.size(); ++i) {
+        for (std::size_t i = 0; i < senses.size(); ++i)
+        {
             auto& sense = senses[i];
             const auto sid = sense["id"].get<std::uint64_t>();
             ImGui::PushID(static_cast<int>(sid));
             const std::string title = "Sense #" + std::to_string(sid);
             bool deleteSense = false;
-            if (ImGui::TreeNode(title.c_str())) {
+            if (ImGui::TreeNode(title.c_str()))
+            {
                 editMultiline("Definition", sense, "definition", 58.0f);
                 bool isPrimary = sense.value("is_primary", false);
-                if (ImGui::Checkbox("Primary sense", &isPrimary)) {
+                if (ImGui::Checkbox("Primary sense", &isPrimary))
+                {
                     if (isPrimary) for (auto& other : senses) other["is_primary"] = false;
                     sense["is_primary"] = isPrimary;
                 }
                 auto& en = sense["translations"]["en"];
                 ImGui::TextUnformatted("English equivalents");
-                for (std::size_t j = 0; j < en.size(); ++j) {
+                for (std::size_t j = 0; j < en.size(); ++j)
+                {
                     ImGui::PushID(static_cast<int>(j));
                     ImGui::SetNextItemWidth(-65);
                     ImGui::InputText("##gloss", &en[j].get_ref<std::string&>());
@@ -277,7 +315,8 @@ private:
             ImGui::PopID();
             if (deleteSense) { senses.erase(senses.begin() + i); --i; }
         }
-        if (ImGui::Button("+ Add sense")) {
+        if (ImGui::Button("+ Add sense"))
+        {
             std::uint64_t next = 1;
             for (const auto& sense : senses)
                 next = std::max(next, sense["id"].get<std::uint64_t>() + 1);
@@ -288,22 +327,26 @@ private:
         }
     }
 
-    void linkButton(std::uint64_t id, const std::string& context) {
+    void linkButton(std::uint64_t id, const std::string& context)
+    {
         const Json* target = engine_.find(id);
         const std::string name = target ? fieldText(*target, "lemma") : "MISSING";
         const std::string label = context + ": " + name + " (#" + std::to_string(id) + ")";
         if (ImGui::SmallButton(label.c_str())) navigation_ = id;
     }
 
-    void renderLinkedEntries() {
+    void renderLinkedEntries()
+    {
         if (!ImGui::CollapsingHeader("Components / relations")) return;
         const Json& morph = draft_["morphology"];
-        for (const auto& c : morph["components"]) {
+        for (const auto& c : morph["components"])
+        {
             if (c["entry_id"].is_number_unsigned())
                 linkButton(c["entry_id"].get<std::uint64_t>(), "Component");
             else ImGui::TextDisabled("Unresolved component: %s", fieldText(c, "surface_form").c_str());
         }
-        for (const auto& r : draft_["relations"]) {
+        for (const auto& r : draft_["relations"])
+        {
             if (r.contains("target_id") && r["target_id"].is_number_unsigned())
                 linkButton(r["target_id"].get<std::uint64_t>(), fieldText(r, "type"));
         }
@@ -325,8 +368,10 @@ private:
             editMultiline("Cultural notes", draft_["culture"], "cultural_notes");
         if (ImGui::CollapsingHeader("History"))
             editOptionalText("Etymology", draft_["history"], "etymology");
-        if (ImGui::CollapsingHeader("Examples")) {
-            for (const auto& ex : draft_["examples"]) {
+        if (ImGui::CollapsingHeader("Examples"))
+        {
+            for (const auto& ex : draft_["examples"])
+            {
                 ImGui::BulletText("%s", fieldText(ex, "text").c_str());
                 if (ex.contains("translations"))
                     ImGui::TextDisabled("%s", fieldText(ex["translations"], "en").c_str());
@@ -336,16 +381,19 @@ private:
         editMultiline("Internal notes", draft_, "notes");
     }
 
-    void renderAdvancedEditor() {
+    void renderAdvancedEditor()
+    {
         ImGui::TextWrapped("Full entry JSON. It includes phonetics, morphology, cultural "
                            "symbolism, history, example sentences, and references.");
-        if (ImGui::Button("Refresh text from form")) {
+        if (ImGui::Button("Refresh text from form"))
+        {
             rawJson_ = draft_.dump(2);
             rawEdited_ = false;
             message_ = "Refreshed JSON text. Previous unapplied JSON text was discarded.";
         }
         ImGui::SameLine();
-        if (ImGui::Button("Import JSON into form")) {
+        if (ImGui::Button("Import JSON into form"))
+        {
             if (importRawJson()) message_ = "JSON parsed into the editor draft. Apply entry to validate it.";
         }
         if (rawEdited_)
@@ -355,7 +403,8 @@ private:
                                      ImGuiInputTextFlags_AllowTabInput)) rawEdited_ = true;
     }
 
-    void renderEditor() {
+    void renderEditor()
+    {
         if (!selected_) { ImGui::TextUnformatted("Select or create an entry."); return; }
         const Json* saved = engine_.find(selected_);
         if (!saved) return;
@@ -364,18 +413,22 @@ private:
         ImGui::TextDisabled("#%llu%s", static_cast<unsigned long long>(selected_),
                             (draftChanged() || rawEdited_) ? "  (unapplied edits)" : "");
         ImGui::Separator();
-        if (ImGui::BeginTabBar("editor_tabs")) {
-            if (ImGui::BeginTabItem("Quick edit")) {
+        if (ImGui::BeginTabBar("editor_tabs"))
+        {
+            if (ImGui::BeginTabItem("Quick edit"))
+            {
                 renderQuickEditor();
                 ImGui::EndTabItem();
             }
-            if (ImGui::BeginTabItem("Advanced JSON")) {
+            if (ImGui::BeginTabItem("Advanced JSON"))
+            {
                 renderAdvancedEditor();
                 ImGui::EndTabItem();
             }
             ImGui::EndTabBar();
         }
-        if (navigation_) {
+        if (navigation_)
+        {
             const auto target = *navigation_;
             navigation_.reset();
             request([this, target] { select(target); });
@@ -383,11 +436,14 @@ private:
     }
 
     void renderPopups() {
-        if (ImGui::BeginPopupModal("Unapplied edits", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        if (ImGui::BeginPopupModal("Unapplied edits", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+        {
             ImGui::TextWrapped("Entry #%llu has changes not yet applied to the dictionary.",
                                static_cast<unsigned long long>(selected_));
-            if (ImGui::Button("Apply and continue")) {
-                if (applyDraft()) {
+            if (ImGui::Button("Apply and continue"))
+            {
+                if (applyDraft())
+                {
                     auto action = std::move(pendingAction_);
                     pendingAction_ = {};
                     ImGui::CloseCurrentPopup();
@@ -395,7 +451,8 @@ private:
                 }
             }
             ImGui::SameLine();
-            if (ImGui::Button("Discard and continue")) {
+            if (ImGui::Button("Discard and continue"))
+            {
                 auto action = std::move(pendingAction_);
                 pendingAction_ = {};
                 ImGui::CloseCurrentPopup();
@@ -405,13 +462,15 @@ private:
             if (ImGui::Button("Cancel")) { pendingAction_ = {}; ImGui::CloseCurrentPopup(); }
             ImGui::EndPopup();
         }
-        if (ImGui::BeginPopupModal("Delete entry?", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        if (ImGui::BeginPopupModal("Delete entry?", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+        {
             ImGui::Text("Permanently remove entry #%llu from the in-memory dictionary?",
                         static_cast<unsigned long long>(selected_));
             ImGui::TextWrapped("Removal is not saved until Save JSON. Referenced entries cannot be removed.");
             if (ImGui::Button("Delete")) {
                 std::string error;
-                if (engine_.remove(selected_, error)) {
+                if (engine_.remove(selected_, error))
+                {
                     const auto ids = engine_.search(query_);
                     selected_ = 0;
                     if (!ids.empty()) select(ids.front());
@@ -426,13 +485,16 @@ private:
     }
 };
 
-void glfwError(int code, const char* description) {
+void glfwError(int code, const char* description)
+{
     std::cerr << "GLFW error " << code << ": " << description << '\n';
 }
 
-void loadUnicodeFont() {
+void loadUnicodeFont()
+{
     // Do not bundle a font: use an installed OS font with Latin-1 glyphs.
-    const char* paths[] = {
+    const char* paths[] =
+    {
         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
         "/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf",
         "C:/Windows/Fonts/segoeui.ttf",
@@ -440,8 +502,10 @@ void loadUnicodeFont() {
         "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
         "/System/Library/Fonts/Supplemental/Arial.ttf"
     };
-    for (const char* path : paths) {
-        if (std::filesystem::exists(path)) {
+    for (const char* path : paths)
+    {
+        if (std::filesystem::exists(path))
+        {
             ImGui::GetIO().Fonts->AddFontFromFileTTF(path, 17.0f);
             return;
         }
@@ -450,7 +514,8 @@ void loadUnicodeFont() {
 }
 } // namespace
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
     const std::filesystem::path dictionaryPath = argc >= 2 ? argv[1] : "data/dictionary.json";
     glfwSetErrorCallback(glfwError);
     if (!glfwInit()) return 1;
@@ -492,7 +557,8 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    while (!glfwWindowShouldClose(window)) {
+    while (!glfwWindowShouldClose(window))
+    {
         glfwPollEvents();
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
