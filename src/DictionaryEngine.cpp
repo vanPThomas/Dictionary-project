@@ -23,8 +23,6 @@ std::string join(const std::vector<std::string>& items)
     return out.str();
 }
 
-// Lightweight case folding for the language's current Latin alphabet, NOT a
-// general-purpose Unicode normalizer. Accents remain phonemically distinct.
 std::string fold(std::string s)
 {
     std::string result;

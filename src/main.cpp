@@ -1,5 +1,3 @@
-// Small, intentionally non-docking Dear ImGui dictionary editor.
-// The UI never reads or writes files: that is DictionaryEngine's job.
 #define GL_SILENCE_DEPRECATION
 #include <GLFW/glfw3.h>
 #include "imgui.h"
