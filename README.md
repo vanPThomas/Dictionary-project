@@ -28,8 +28,10 @@ The project is still in early development.
 The project uses CMake. Dependencies are automatically downloaded during the initial configuration.
 
 ```bash
-cmake -S . -B build
-cmake --build build -j$(nproc)
+mkdir build
+cd build
+cmake ..
+
 ```
 
 To run the application:
