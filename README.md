@@ -48,4 +48,4 @@ For now, I'm focusing on getting the dictionary itself working the way I want it
 
 ## Status
 
-Work in progress. This is a personal project, mainly developed for my own use and as an opportunity to experiment with C++ and Dear ImGui.
+Work in progress. This is a personal project, mainly developed for my own use and as an opportunity to experiment with C++ and Dear ImGui. But if anyone can use it, you are more than welcome to do so.
