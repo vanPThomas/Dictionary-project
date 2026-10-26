@@ -93,6 +93,7 @@ target_link_libraries(imgui_runtime PUBLIC
 
 add_executable(dictionary-project
     src/main.cpp
+    src/DictionaryUI.cpp
 )
 
 target_include_directories(dictionary-project PRIVATE
