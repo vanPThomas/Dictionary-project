@@ -58,6 +58,7 @@ int main(int argc, char** argv)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 #endif
 
+    // preparing ImGui 
     GLFWwindow* window = glfwCreateWindow(1280, 820, "New Language Dictionary", nullptr, nullptr);
     if (!window) { glfwTerminate(); return 1; }
     glfwMakeContextCurrent(window);
@@ -85,11 +86,13 @@ int main(int argc, char** argv)
 
     while (!glfwWindowShouldClose(window))
     {
+        // set up next frame
         glfwPollEvents();
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
+        // draw UI
         ui.draw();
 
         ImGui::Render();

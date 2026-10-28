@@ -74,8 +74,10 @@ bool DictionaryUI::loaded() const { return loaded_; }
 
 const std::string& DictionaryUI::message() const { return message_; }
 
+// Draw UI, triggered ever cylce
 void DictionaryUI::draw()
 {
+    // Preparing main window
     ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(viewport->WorkPos);
     ImGui::SetNextWindowSize(viewport->WorkSize);
@@ -83,6 +85,7 @@ void DictionaryUI::draw()
                  ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
                  ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_MenuBar);
 
+    // Menu bar
     if (ImGui::BeginMenuBar())
     {
         if (ImGui::BeginMenu("File"))
