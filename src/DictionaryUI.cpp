@@ -109,6 +109,7 @@ void DictionaryUI::draw()
         ImGui::EndMenuBar();
     }
 
+    // Action buttons
     if (ImGui::Button("+ Word")) request([this] { newEntry("word"); });
     ImGui::SameLine();
     if (ImGui::Button("+ Affix")) request([this] { newEntry("affix"); });
@@ -179,6 +180,7 @@ void DictionaryUI::newEntry(const std::string& type)
     message_ = "Created entry #" + std::to_string(id) + " (not saved to disk yet).";
 }
 
+// import json dictionary
 bool DictionaryUI::importRawJson() {
     try
     {
