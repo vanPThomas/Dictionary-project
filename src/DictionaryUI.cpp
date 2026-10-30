@@ -171,6 +171,7 @@ void DictionaryUI::request(std::function<void()> action)
     }
 }
 
+// create new dictionary entry
 void DictionaryUI::newEntry(const std::string& type)
 {
     std::uint64_t id = 0;
@@ -202,6 +203,7 @@ bool DictionaryUI::importRawJson() {
     }
 }
 
+// used when saving dictionary
 bool DictionaryUI::applyDraft()
 {
     if (!selected_) return true;
@@ -218,6 +220,7 @@ bool DictionaryUI::applyDraft()
     return true;
 }
 
+// save dictionary
 void DictionaryUI::saveAll() {
     if (!applyDraft()) return;
     std::string error;
@@ -225,6 +228,7 @@ void DictionaryUI::saveAll() {
     else message_ = "Save failed:\n" + error;
 }
 
+// validate commited entries
 void DictionaryUI::validate()
 {
     auto issues = engine_.validate();
