@@ -16,6 +16,8 @@
 namespace lex
 {
 namespace {
+
+// join strings
 std::string join(const std::vector<std::string>& items)
 {
     std::ostringstream out;
@@ -231,6 +233,7 @@ std::vector<std::string> DictionaryEngine::validateDocument(const Json& doc)
     return errors;
 }
 
+// load dictionary
 bool DictionaryEngine::load(const std::filesystem::path& path, std::string& error)
 {
     try
