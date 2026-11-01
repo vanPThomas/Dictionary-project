@@ -9,35 +9,38 @@
 #include <filesystem>
 #include <iostream>
 
+// Anonymous namespace to keep functions private
 namespace
 {
-void glfwError(int code, const char* description)
-{
-    std::cerr << "GLFW error " << code << ": " << description << '\n';
-}
-
-void loadUnicodeFont()
-{
-    // Do not bundle a font: use an installed OS font with Latin-1 glyphs.
-    const char* paths[] =
+    //glfw Error Handler
+    void glfwError(int code, const char* description)
     {
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-        "/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf",
-        "C:/Windows/Fonts/segoeui.ttf",
-        "C:/Windows/Fonts/arial.ttf",
-        "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
-        "/System/Library/Fonts/Supplemental/Arial.ttf"
-    };
-    for (const char* path : paths)
-    {
-        if (std::filesystem::exists(path))
-        {
-            ImGui::GetIO().Fonts->AddFontFromFileTTF(path, 17.0f);
-            return;
-        }
+        std::cerr << "GLFW error " << code << ": " << description << '\n';
     }
-    // Default font may not render every character in the constructed language.
-}
+
+    // Unicode font loader
+    void loadUnicodeFont()
+    {
+        // Do not bundle a font: use an installed OS font with Latin-1 glyphs.
+        const char* paths[] =
+        {
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf",
+            "C:/Windows/Fonts/segoeui.ttf",
+            "C:/Windows/Fonts/arial.ttf",
+            "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
+            "/System/Library/Fonts/Supplemental/Arial.ttf"
+        };
+        for (const char* path : paths)
+        {
+            if (std::filesystem::exists(path))
+            {
+                ImGui::GetIO().Fonts->AddFontFromFileTTF(path, 17.0f);
+                return;
+            }
+        }
+        // Default font may not render every character in the constructed language.
+    }
 } // namespace
 
 int main(int argc, char** argv)
@@ -59,7 +62,7 @@ int main(int argc, char** argv)
 #endif
 
     // preparing ImGui 
-    GLFWwindow* window = glfwCreateWindow(1280, 820, "New Language Dictionary", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(1280, 820, "New Language Dictionary", nullptr, nullptr); // Creating main window
     if (!window) { glfwTerminate(); return 1; }
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
@@ -73,6 +76,7 @@ int main(int argc, char** argv)
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init(glsl);
 
+    // Create dictionary UI
     DictionaryUI ui(dictionaryPath);
     if (!ui.loaded()) {
         std::cerr << ui.message() << '\n';
@@ -86,8 +90,8 @@ int main(int argc, char** argv)
 
     while (!glfwWindowShouldClose(window))
     {
-        // set up next frame
         glfwPollEvents();
+        // Begin next frame
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
@@ -95,7 +99,10 @@ int main(int argc, char** argv)
         // draw UI
         ui.draw();
 
+        // generate Frame
         ImGui::Render();
+
+        // Clear the screen
         int displayWidth = 0, displayHeight = 0;
         glfwGetFramebufferSize(window, &displayWidth, &displayHeight);
         glViewport(0, 0, displayWidth, displayHeight);
@@ -105,6 +112,7 @@ int main(int argc, char** argv)
         glfwSwapBuffers(window);
     }
 
+    // Complete Cleanup
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
