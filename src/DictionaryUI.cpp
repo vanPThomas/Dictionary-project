@@ -74,16 +74,16 @@ bool DictionaryUI::loaded() const { return loaded_; }
 
 const std::string& DictionaryUI::message() const { return message_; }
 
-// Draw UI, triggered ever cylce
+// Draw UI, triggered every cylce
 void DictionaryUI::draw()
 {
     // Preparing main window
     ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(viewport->WorkPos);
-    ImGui::SetNextWindowSize(viewport->WorkSize);
+    ImGui::SetNextWindowSize(viewport->WorkSize); // Take up entire screen workspace
     ImGui::Begin("New Language Dictionary", nullptr,
                  ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
-                 ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_MenuBar);
+                 ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_MenuBar); // start new window and control what user can do with the window.  
 
     // Menu bar
     if (ImGui::BeginMenuBar())
@@ -95,7 +95,7 @@ void DictionaryUI::draw()
         }
         if (ImGui::BeginMenu("Entry"))
         {
-            if (ImGui::MenuItem("New word")) request([this] { newEntry("word"); });
+            if (ImGui::MenuItem("New word")) request([this] { newEntry("word"); }); // use newWord through lambda expression, makes it safe when there are unsaved changes
             if (ImGui::MenuItem("New affix")) request([this] { newEntry("affix"); });
             if (selected_ && ImGui::MenuItem("Delete selected"))
                 ImGui::OpenPopup("Delete entry?");
@@ -106,7 +106,7 @@ void DictionaryUI::draw()
             if (ImGui::MenuItem("Validate saved entries")) validate();
             ImGui::EndMenu();
         }
-        ImGui::EndMenuBar();
+        ImGui::EndMenuBar(); // End menu bar
     }
 
     // Action buttons
@@ -118,11 +118,12 @@ void DictionaryUI::draw()
     ImGui::SameLine();
     if (ImGui::Button("Save JSON")) saveAll();
     ImGui::SameLine();
-    ImGui::TextDisabled("%zu entries%s", engine_.size(), engine_.dirty() ? "  * not saved to disk" : "");
+    ImGui::TextDisabled("%zu entries%s", engine_.size(), engine_.dirty() ? "  * not saved to disk" : ""); // final entry is  aternery expression. if engine contains changes not saved to disk, give warning
 
     if (ImGui::BeginTable("main_layout", 2,
             ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersInnerV, ImVec2(-1, -55)))
     {
+        // set up columns, one is the search field, the other the editor 
         ImGui::TableSetupColumn("Search", ImGuiTableColumnFlags_WidthFixed, 330.0f);
         ImGui::TableSetupColumn("Editor", ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableNextRow();
@@ -139,6 +140,7 @@ void DictionaryUI::draw()
     ImGui::TextWrapped("%s", message_.c_str());
 
     renderPopups();
+    // End main window
     ImGui::End();
 }
 
@@ -158,6 +160,7 @@ void DictionaryUI::select(std::uint64_t id)
     rawEdited_ = false;
 }
 
+// used in lanbda expression to make sure there ar no unapplied edits
 void DictionaryUI::request(std::function<void()> action)
 {
     if (draftChanged() || rawEdited_)
