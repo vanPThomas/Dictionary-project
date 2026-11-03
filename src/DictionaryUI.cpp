@@ -11,21 +11,24 @@ namespace
 {
     using lex::Json;
 
+    // return a string from a json object from a specific field
     std::string fieldText(const Json& j, const char* field)
     {
         return j.is_object() && j.contains(field) && j[field].is_string()
-            ? j[field].get<std::string>() : "";
+            ? j[field].get<std::string>() : ""; // get tells you to get the string associated with the field
     }
 
+    // edit a json string directly by showing an input text field
     void editText(const char* label, Json& parent, const char* key)
     {
         if (!parent.contains(key) || !parent[key].is_string()) parent[key] = "";
-        ImGui::InputText(label, &parent[key].get_ref<std::string&>());
+        ImGui::InputText(label, &parent[key].get_ref<std::string&>()); /// get_ref retrieves a reference to a string, vs get, which creates a new string
     }
 
+    // edit miltiple lines
     void editMultiline(const char* label, Json& parent, const char* key, float height = 75.0f)
     {
-        if (!parent.contains(key) || !parent[key].is_string()) parent[key] = "";
+        if (!parent.contains(key) || !parent[key].is_string()) parent[key] = ""; // if field is empty, return null pointer, otherwise return an empty string
         ImGui::InputTextMultiline(label, &parent[key].get_ref<std::string&>(), ImVec2(-1, height));
     }
 
@@ -37,18 +40,20 @@ namespace
             parent[key] = text.empty() ? Json(nullptr) : Json(text);
     }
 
+    // extracting a nested field
     std::string partOfSpeech(const Json& entry)
     {
         return entry.contains("linguistics")
             ? fieldText(entry["linguistics"], "part_of_speech") : "";
     }
 
+    // retrieve the primary definition of a word
     std::string primaryDefinition(const Json& entry)
     {
         if (!entry.contains("senses") || entry["senses"].empty()) return "";
         for (const auto& s : entry["senses"])
-            if (s.value("is_primary", false)) return fieldText(s, "definition");
-        return fieldText(entry["senses"][0], "definition");
+            if (s.value("is_primary", false)) return fieldText(s, "definition"); // check if the field is_primary is true, if field doesn't exist, return false
+        return fieldText(entry["senses"][0], "definition");// return first if no entry is marked as primary
     }
 } // namespace
 
