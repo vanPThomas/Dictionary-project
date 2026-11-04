@@ -57,6 +57,7 @@ namespace
     }
 } // namespace
 
+// UI constructor
 DictionaryUI::DictionaryUI(std::filesystem::path path)
 {
     std::string error;
@@ -149,15 +150,17 @@ void DictionaryUI::draw()
     ImGui::End();
 }
 
+// Compare entry you've edited with the version stored in teh dictionary
 bool DictionaryUI::draftChanged() const
 {
-    const auto* stored = engine_.find(selected_);
+    const auto* stored = engine_.find(selected_); // retrieve the stored entry
     return stored && draft_ != *stored;
 }
 
+// select an entry for editing
 void DictionaryUI::select(std::uint64_t id)
 {
-    const auto* entry = engine_.find(id);
+    const auto* entry = engine_.find(id); // find entry in the engine using id
     if (!entry) { message_ = "Unknown entry #" + std::to_string(id); return; }
     selected_ = id;
     draft_ = *entry;
