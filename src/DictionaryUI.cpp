@@ -168,29 +168,63 @@ void DictionaryUI::select(std::uint64_t id)
     rawEdited_ = false;
 }
 
-// used in lanbda expression to make sure there ar no unapplied edits
+// Request execution of an action.
+//
+// If the editor has unapplied changes, store the action
+// for later and request confirmation from the user.
+// Otherwise, execute the action immediately.
+//
+// std::function<void()> can hold any compatible callable,
+// including capturing lambdas. It takes no arguments and
+// returns nothing.
 void DictionaryUI::request(std::function<void()> action)
 {
+    // Check both the structured draft and raw JSON editor.
     if (draftChanged() || rawEdited_)
     {
+        // Move the callable into our persistent member variable.
+        // It can be executed later from the confirmation popup.
         pendingAction_ = std::move(action);
+
+        // Request the unapplied-edits confirmation popup.
         ImGui::OpenPopup("Unapplied edits");
     }
     else
     {
+        // No pending edits: execute the callable immediately.
         action();
     }
 }
 
-// create new dictionary entry
+
+// Create a new dictionary entry of the requested type.
+//
+// The engine creates the entry and assigns a permanent ID.
+// The UI then selects the new entry for editing.
 void DictionaryUI::newEntry(const std::string& type)
 {
+    // Output variables filled by engine_.add().
     std::uint64_t id = 0;
     std::string error;
-    if (!engine_.add(type, id, error)) { message_ = error; return; }
+
+    // Ask the engine to create the entry.
+    // Returns false if creation fails.
+    if (!engine_.add(type, id, error))
+    {
+        message_ = error;
+        return;
+    }
+
+    // Select the newly created entry.
+    // This also prepares draft_ and rawJson_.
     select(id);
-    message_ = "Created entry #" + std::to_string(id) + " (not saved to disk yet).";
+
+    // Inform the user that the new entry has not yet
+    // been written to the JSON file on disk.
+    message_ = "Created entry #" + std::to_string(id)
+             + " (not saved to disk yet).";
 }
+
 
 // import json dictionary
 bool DictionaryUI::importRawJson() {
