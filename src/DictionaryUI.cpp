@@ -226,27 +226,93 @@ void DictionaryUI::newEntry(const std::string& type)
 }
 
 
-// import json dictionary
-bool DictionaryUI::importRawJson() {
+// // import json dictionary
+// bool DictionaryUI::importRawJson() {
+//     try
+//     {
+//         Json parsed = Json::parse(rawJson_);
+//         if (!parsed.is_object()) { message_ = "Entry JSON must be an object."; return false; }
+//         std::string error;
+//         if (!engine_.validateReplacement(selected_, parsed, error)) {
+//             message_ = "Cannot import invalid entry:\n" + error;
+//             return false;
+//         }
+//         draft_ = std::move(parsed);
+//         rawEdited_ = false;
+//         return true;
+//     }
+//     catch (const std::exception& ex)
+//     {
+//         message_ = std::string("Invalid entry JSON: ") + ex.what();
+//         return false;
+//     }
+// }
+
+
+/*
+    Import manually edited JSON text into the current draft.
+
+    The function:
+    1. Parses rawJson_ into a JSON value.
+    2. Checks that the result is an object.
+    3. Validates it against the dictionary schema.
+    4. Moves the validated data into draft_.
+    5. Resets the raw-editor modification flag.
+
+    Returns true on success, false on failure.
+
+    Does NOT commit the entry to DictionaryEngine
+    or save anything to disk.
+*/
+bool DictionaryUI::importRawJson()
+{
+    // JSON parsing and other operations may throw exceptions.
     try
     {
+        // Convert raw JSON text into a structured JSON value.
+        // Throws an exception if the JSON syntax is invalid.
         Json parsed = Json::parse(rawJson_);
-        if (!parsed.is_object()) { message_ = "Entry JSON must be an object."; return false; }
+
+        // Dictionary entries must be JSON objects.
+        if (!parsed.is_object())
+        {
+            message_ = "Entry JSON must be an object.";
+            return false;
+        }
+
         std::string error;
-        if (!engine_.validateReplacement(selected_, parsed, error)) {
+
+        // Validate the proposed entry using DictionaryEngine.
+        // Checks IDs, required fields, references, etc.
+        // Does not actually modify the engine.
+        if (!engine_.validateReplacement(selected_, parsed, error))
+        {
             message_ = "Cannot import invalid entry:\n" + error;
             return false;
         }
+
+        // Validation succeeded.
+        // Move the parsed JSON into the editable draft.
+        // Avoids unnecessarily copying the entire JSON object.
         draft_ = std::move(parsed);
+
+        // The raw text has now been imported into the draft.
         rawEdited_ = false;
+
+        // Import successful.
         return true;
     }
     catch (const std::exception& ex)
     {
+        // Handle JSON parsing errors and other standard exceptions.
+        // ex.what() provides a human-readable error description.
         message_ = std::string("Invalid entry JSON: ") + ex.what();
+
+        // Leave the existing draft unchanged if importing fails.
         return false;
     }
 }
+
 
 // used when saving dictionary
 bool DictionaryUI::applyDraft()
