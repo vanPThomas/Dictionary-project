@@ -313,21 +313,55 @@ bool DictionaryUI::importRawJson()
     }
 }
 
+/*
+    Commit the current editor draft to DictionaryEngine.
 
-// used when saving dictionary
+    If raw JSON has been edited, import and validate it first.
+    Only replace the stored entry if the draft has changed.
+
+    Returns true if successful or nothing needs applying.
+    Returns false if importing or replacing fails.
+
+    Does NOT save changes to disk.
+*/
 bool DictionaryUI::applyDraft()
 {
-    if (!selected_) return true;
-    if (rawEdited_ && !importRawJson()) return false;
-    if (!draftChanged()) return true;
+    // No selected entry means there's nothing to apply.
+    // This isn't an error, so return success.
+    if (!selected_)
+        return true;
+
+    // If the Advanced JSON editor has pending changes,
+    // parse and validate them before continuing.
+    if (rawEdited_ && !importRawJson())
+        return false;
+
+    // If the draft matches the stored entry,
+    // there's nothing to commit.
+    if (!draftChanged())
+        return true;
+
+    // Output variable for engine validation errors.
     std::string error;
+
+    // Replace the stored entry with the edited draft.
+    // The engine validates the replacement before accepting it.
     if (!engine_.replace(selected_, draft_, error))
     {
         message_ = "Cannot apply entry:\n" + error;
         return false;
     }
+
+    // Synchronize the Advanced JSON editor's text
+    // with the newly committed draft.
     rawJson_ = draft_.dump(2);
-    message_ = "Applied entry #" + std::to_string(selected_) + ". Save JSON to write it to disk.";
+
+    // Inform the user that the changes are applied
+    // in memory but haven't been saved to disk.
+    message_ = "Applied entry #"
+             + std::to_string(selected_)
+             + ". Save JSON to write it to disk.";
+
     return true;
 }
 
