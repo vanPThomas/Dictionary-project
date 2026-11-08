@@ -264,18 +264,55 @@ const Json* DictionaryEngine::find(std::uint64_t id) const
     return nullptr;
 }
 
+
 std::vector<std::uint64_t> DictionaryEngine::search(const std::string& text) const
 {
+    struct SearchResult
+    {
+        std::uint64_t id;
+        std::string sortKey;
+    };
+
+    std::vector<SearchResult> hits;
     std::vector<std::uint64_t> ids;
+
+    // Normalize search text once.
     const std::string q = fold(text);
-    if (!document_.is_object()) return ids;
+
+    if (!document_.is_object())
+        return ids;
+
+    hits.reserve(document_["entries"].size());
+
+    // Search through dictionary entries.
     for (const auto& entry : document_["entries"])
-        if (q.empty() || matches(entry, q)) ids.push_back(entry["id"].get<std::uint64_t>());
-    std::stable_sort(ids.begin(), ids.end(), [this](auto lhs, auto rhs) {
-        return fold(stringValue(*find(lhs), "lemma")) < fold(stringValue(*find(rhs), "lemma"));
-    });
+    {
+        if (q.empty() || matches(entry, q))
+        {
+            hits.push_back({
+                entry["id"].get<std::uint64_t>(),
+                fold(stringValue(entry, "lemma"))
+            });
+        }
+    }
+
+    // Sort using the already retrieved lemma strings.
+    // No repeated ID lookups during sorting!
+    std::stable_sort(hits.begin(), hits.end(),
+        [](const SearchResult& a, const SearchResult& b)
+        {
+            return a.sortKey < b.sortKey;
+        });
+
+    // Return only the entry IDs, as before.
+    ids.reserve(hits.size());
+
+    for (const auto& hit : hits)
+        ids.push_back(hit.id);
+
     return ids;
 }
+
 
 Json DictionaryEngine::newEntry(std::uint64_t id, const std::string& type)
 {

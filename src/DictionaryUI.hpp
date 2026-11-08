@@ -28,6 +28,11 @@ private:
     bool rawEdited_ = false;
     std::function<void()> pendingAction_;
     std::optional<std::uint64_t> navigation_;
+    // Cached search results, avoiding a full dictionary search every frame.
+    std::vector<std::uint64_t> searchResults_;
+
+    // Whether the cached results need to be updated.
+    bool searchDirty_ = true;
 
     bool draftChanged() const;
     void select(std::uint64_t id);

@@ -383,30 +383,73 @@ void DictionaryUI::validate()
         message_ += "(Current editor draft is not validated until you press Apply entry.)";
 }
 
+
 void DictionaryUI::renderBrowser()
 {
     ImGui::TextUnformatted("Find a word");
     ImGui::SetNextItemWidth(-1);
-    ImGui::InputTextWithHint("##search", "Lemma, definition, translation...", &query_);
-    const auto results = engine_.search(query_);
-    ImGui::TextDisabled("%zu results", results.size());
-    ImGui::Separator();
-    for (const auto id : results)
+
+    // Search only when query changes.
+    if (ImGui::InputTextWithHint(
+            "##search",
+            "Lemma, definition, translation...",
+            &query_))
     {
-        const Json* e = engine_.find(id);
-        if (!e) continue;
-        const std::string lemma = fieldText(*e, "lemma");
-        std::string category = partOfSpeech(*e);
-        if (category.empty()) category = fieldText(*e, "entry_type");
-        const std::string label = lemma + "   (" + category + ")##entry" + std::to_string(id);
-        if (ImGui::Selectable(label.c_str(), selected_ == id)) {
-            request([this, id] { select(id); });
-        }
-        ImGui::TextDisabled("#%llu  %s", static_cast<unsigned long long>(id),
-                            primaryDefinition(*e).c_str());
-        ImGui::Separator();
+        searchDirty_ = true;
     }
+
+    // Refresh cached results if necessary.
+    if (searchDirty_)
+    {
+        searchResults_ = engine_.search(query_);
+        searchDirty_ = false;
+    }
+
+    ImGui::TextDisabled("%zu results", searchResults_.size());
+    ImGui::Separator();
+
+    // Only process entries currently visible in the browser.
+    ImGuiListClipper clipper;
+    clipper.Begin(static_cast<int>(searchResults_.size()));
+
+    while (clipper.Step())
+    {
+        for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; ++i)
+        {
+            const std::uint64_t id = searchResults_[i];
+
+            const Json* e = engine_.find(id);
+            if (!e)
+                continue;
+
+            const std::string lemma = fieldText(*e, "lemma");
+
+            std::string category = partOfSpeech(*e);
+            if (category.empty())
+                category = fieldText(*e, "entry_type");
+
+            const std::string label =
+                lemma + "   (" + category + ")##entry"
+                + std::to_string(id);
+
+            if (ImGui::Selectable(label.c_str(), selected_ == id))
+            {
+                request([this, id] { select(id); });
+            }
+
+            ImGui::TextDisabled(
+                "#%llu  %s",
+                static_cast<unsigned long long>(id),
+                primaryDefinition(*e).c_str()
+            );
+
+            ImGui::Separator();
+        }
+    }
+
+    clipper.End();
 }
+
 
 void DictionaryUI::renderSenses()
 {
