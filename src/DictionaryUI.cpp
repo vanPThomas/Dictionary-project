@@ -366,9 +366,12 @@ bool DictionaryUI::applyDraft()
 }
 
 // save dictionary
-void DictionaryUI::saveAll() {
+void DictionaryUI::saveAll()
+{
+    // applay the draft, otherwise return
     if (!applyDraft()) return;
     std::string error;
+    // save teh data, return teh save location, otherwise throw error
     if (engine_.save(error)) message_ = "Saved to " + engine_.path().string();
     else message_ = "Save failed:\n" + error;
 }
@@ -376,9 +379,13 @@ void DictionaryUI::saveAll() {
 // validate commited entries
 void DictionaryUI::validate()
 {
+    // validate engine, return vector of problems
     auto issues = engine_.validate();
+    // if issues is empty, good! everything is good to go
     message_ = issues.empty() ? "All committed entries passed validation." : "Validation failed:\n";
+    // loop over potential problems in issues
     for (const auto& issue : issues) message_ += "- " + issue + "\n";
+    // check if there is anything left to apply and give warning of there is something
     if (draftChanged() || rawEdited_)
         message_ += "(Current editor draft is not validated until you press Apply entry.)";
 }
