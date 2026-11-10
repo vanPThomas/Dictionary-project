@@ -390,28 +390,26 @@ void DictionaryUI::validate()
         message_ += "(Current editor draft is not validated until you press Apply entry.)";
 }
 
-
+// render the browser part of the program, the left side
 void DictionaryUI::renderBrowser()
 {
     ImGui::TextUnformatted("Find a word");
     ImGui::SetNextItemWidth(-1);
 
-    // Search only when query changes.
-    if (ImGui::InputTextWithHint(
-            "##search",
-            "Lemma, definition, translation...",
-            &query_))
+    // Search only when query changes. (if triggers when something is typed into search bar)
+    if (ImGui::InputTextWithHint("##search", "Lemma, definition, translation...", &query_))
     {
         searchDirty_ = true;
     }
 
-    // Refresh cached results if necessary.
+    // Refresh cached results if necessary. search dirty becme true when something was typed in search bar. so search!
     if (searchDirty_)
     {
         searchResults_ = engine_.search(query_);
         searchDirty_ = false;
     }
 
+    // number of results
     ImGui::TextDisabled("%zu results", searchResults_.size());
     ImGui::Separator();
 
