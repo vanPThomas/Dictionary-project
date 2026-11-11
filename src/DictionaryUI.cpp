@@ -419,14 +419,19 @@ void DictionaryUI::renderBrowser()
 
     while (clipper.Step())
     {
+        // draw only what is shown on the display
         for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; ++i)
         {
             const std::uint64_t id = searchResults_[i];
 
+            // find the json entry to be displayed
             const Json* e = engine_.find(id);
+
+            // continue looping if entry not found
             if (!e)
                 continue;
 
+            //retrieve word
             const std::string lemma = fieldText(*e, "lemma");
 
             std::string category = partOfSpeech(*e);
