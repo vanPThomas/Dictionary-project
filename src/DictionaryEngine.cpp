@@ -15,83 +15,85 @@
 
 namespace lex
 {
-namespace {
-
-// join strings
-std::string join(const std::vector<std::string>& items)
+namespace
 {
-    std::ostringstream out;
-    for (const auto& item : items) out << "- " << item << '\n';
-    return out.str();
-}
 
-std::string fold(std::string s)
-{
-    std::string result;
-    for (std::size_t i = 0; i < s.size();)
+    // join strings
+    std::string join(const std::vector<std::string>& items)
     {
-        const unsigned char c = static_cast<unsigned char>(s[i]);
-        if (c < 128)
-        {
-            result += static_cast<char>(std::tolower(c));
-            ++i;
-        }
-        else if (i + 1 < s.size())
-        {
-            const std::string pair = s.substr(i, 2);
-            if (pair == "\xC3\x90") result += "\xC3\xB0";      // Ð → ð
-            else if (pair == "\xC3\x87") result += "\xC3\xA7"; // Ç → ç
-            else if (pair == "\xC3\x93") result += "\xC3\xB3"; // Ó → ó
-            else if (pair == "\xC5\x8C") result += "\xC5\x8D"; // Ō → ō
-            else result += pair;
-            i += 2;
-        }
-        else
-        {
-            result += s[i++];
-        }
+        std::ostringstream out;
+        for (const auto& item : items) out << "- " << item << '\n';
+        return out.str();
     }
-    return result;
-}
 
-std::string stringValue(const Json& object, const char* key)
-{
-    if (!object.is_object() || !object.contains(key) || !object[key].is_string()) return "";
-    return object[key].get<std::string>();
-}
-
-bool matches(const Json& item, const std::string& q)
-{
-    auto has = [&](const std::string& text) { return fold(text).find(q) != std::string::npos; };
-    if (has(stringValue(item, "lemma"))) return true;
-    if (item.contains("alternate_spellings") && item["alternate_spellings"].is_array())
+    std::string fold(std::string s)
     {
-        for (const auto& v : item["alternate_spellings"])
-            if (v.is_string() && has(v.get<std::string>())) return true;
-    }
-    if (item.contains("senses") && item["senses"].is_array())
-    {
-        for (const auto& sense : item["senses"])
+        std::string result;
+        for (std::size_t i = 0; i < s.size();)
         {
-            if (has(stringValue(sense, "definition"))) return true;
-            if (sense.contains("translations") && sense["translations"].is_object())
+            const unsigned char c = static_cast<unsigned char>(s[i]);
+            if (c < 128)
             {
-                for (auto it = sense["translations"].begin(); it != sense["translations"].end(); ++it)
+                result += static_cast<char>(std::tolower(c));
+                ++i;
+            }
+            else if (i + 1 < s.size())
+            {
+                const std::string pair = s.substr(i, 2);
+                if (pair == "\xC3\x90") result += "\xC3\xB0";      // Ð → ð
+                else if (pair == "\xC3\x87") result += "\xC3\xA7"; // Ç → ç
+                else if (pair == "\xC3\x93") result += "\xC3\xB3"; // Ó → ó
+                else if (pair == "\xC5\x8C") result += "\xC5\x8D"; // Ō → ō
+                else result += pair;
+                i += 2;
+            }
+            else
+            {
+                result += s[i++];
+            }
+        }
+        return result;
+    }
+
+    std::string stringValue(const Json& object, const char* key)
+    {
+        if (!object.is_object() || !object.contains(key) || !object[key].is_string()) return "";
+        return object[key].get<std::string>();
+    }
+
+    bool matches(const Json& item, const std::string& q)
+    {
+        auto has = [&](const std::string& text) { return fold(text).find(q) != std::string::npos; };
+        if (has(stringValue(item, "lemma"))) return true;
+        if (item.contains("alternate_spellings") && item["alternate_spellings"].is_array())
+        {
+            for (const auto& v : item["alternate_spellings"])
+                if (v.is_string() && has(v.get<std::string>())) return true;
+        }
+        if (item.contains("senses") && item["senses"].is_array())
+        {
+            for (const auto& sense : item["senses"])
+            {
+                if (has(stringValue(sense, "definition"))) return true;
+                if (sense.contains("translations") && sense["translations"].is_object())
                 {
-                    if (it.value().is_array())
+                    for (auto it = sense["translations"].begin(); it != sense["translations"].end(); ++it)
                     {
-                        for (const auto& translation : it.value())
-                            if (translation.is_string() && has(translation.get<std::string>())) return true;
+                        if (it.value().is_array())
+                        {
+                            for (const auto& translation : it.value())
+                                if (translation.is_string() && has(translation.get<std::string>())) return true;
+                        }
                     }
                 }
             }
         }
+        if (item.contains("morphology") && item["morphology"].is_object() &&
+            has(stringValue(item["morphology"], "literal_gloss"))) return true;
+        return false;
     }
-    if (item.contains("morphology") && item["morphology"].is_object() &&
-        has(stringValue(item["morphology"], "literal_gloss"))) return true;
-    return false;
-}
 } // namespace
+
 
 std::vector<std::string> DictionaryEngine::validateDocument(const Json& doc)
 {
