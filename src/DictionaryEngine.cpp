@@ -26,11 +26,15 @@ namespace
         return out.str();
     }
 
+    // normalize text for case sensitive searching
     std::string fold(std::string s)
     {
         std::string result;
+        
+        // loop over every letter of the word
         for (std::size_t i = 0; i < s.size();)
         {
+            // normal letter occupies one byte, special ones 2 bytes, check for that.
             const unsigned char c = static_cast<unsigned char>(s[i]);
             if (c < 128)
             {
