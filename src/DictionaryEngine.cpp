@@ -59,12 +59,14 @@ namespace
         return result;
     }
 
+    // Retrieve text safely
     std::string stringValue(const Json& object, const char* key)
     {
         if (!object.is_object() || !object.contains(key) || !object[key].is_string()) return "";
         return object[key].get<std::string>();
     }
 
+    // search an intire entry
     bool matches(const Json& item, const std::string& q)
     {
         auto has = [&](const std::string& text) { return fold(text).find(q) != std::string::npos; };
