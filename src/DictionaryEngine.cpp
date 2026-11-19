@@ -70,23 +70,43 @@ namespace
     bool matches(const Json& item, const std::string& q)
     {
         auto has = [&](const std::string& text) { return fold(text).find(q) != std::string::npos; };
+
+        // Search the entry's lemma.
         if (has(stringValue(item, "lemma"))) return true;
+
+        // Search all alternate spellings, if present.
         if (item.contains("alternate_spellings") && item["alternate_spellings"].is_array())
         {
+            // Iterate over every alternate spelling.
             for (const auto& v : item["alternate_spellings"])
-                if (v.is_string() && has(v.get<std::string>())) return true;
+            {
+                // Only attempt to search JSON string values.
+                if (v.is_string() && has(v.get<std::string>()))
+                    return true;
+            }
         }
+
+        // Search all senses (individual meanings).
         if (item.contains("senses") && item["senses"].is_array())
         {
             for (const auto& sense : item["senses"])
             {
-                if (has(stringValue(sense, "definition"))) return true;
+                // Search this sense's definition.
+                if (has(stringValue(sense, "definition")))
+                    return true;
+                // Search translations belonging to this sense.
                 if (sense.contains("translations") && sense["translations"].is_object())
                 {
+                    // Iterate over every language field.
+                    // it.key() would provide the language code.
+                    // it.value() provides the corresponding data.
                     for (auto it = sense["translations"].begin(); it != sense["translations"].end(); ++it)
                     {
+                        // Each language should contain an array
+                        // of possible translations.
                         if (it.value().is_array())
                         {
+                            // Search each translation string.
                             for (const auto& translation : it.value())
                                 if (translation.is_string() && has(translation.get<std::string>())) return true;
                         }
