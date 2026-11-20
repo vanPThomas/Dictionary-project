@@ -488,15 +488,15 @@ bool DictionaryEngine::save(std::string& error)
         }
         if (std::filesystem::exists(path_))
             std::filesystem::copy_file(path_, backup, std::filesystem::copy_options::overwrite_existing);
-#ifdef _WIN32
+    #ifdef _WIN32
         if (!MoveFileExW(temp.wstring().c_str(), path_.wstring().c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH))
         {
             error = "Failed to replace dictionary file (Windows error " + std::to_string(GetLastError()) + ")";
             return false;
         }
-#else
+    #else
         std::filesystem::rename(temp, path_);
-#endif
+    #endif
         dirty_ = false;
         error.clear();
         return true;
